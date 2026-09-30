@@ -1,0 +1,9 @@
+node_modules/
+coverage/
+.env
+*.log
+uploads/avatars/*
+!uploads/avatars/.gitkeep
+.DS_Store
+tests/.mongo-config.json
+.claude/
