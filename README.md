@@ -1,7 +1,7 @@
 # Node Assignment - User Management API
 
-Express + MongoDB backend for the Node assignment: users, JWT auth, avatar upload, logging,
-tests, API docs.
+Express + MongoDB backend for the Node assignment: users, JWT auth, avatar upload, a per-user
+todo board, logging, tests, API docs.
 
 ## Stack
 
@@ -13,14 +13,15 @@ express-validator, Jest/Supertest for tests, Swagger UI for docs, ESLint + Prett
 ```
 src/
   config/       env, logger, db connection, swagger spec
-  models/       User schema
+  models/       User, Todo (status) and Task schemas
   validators/   express-validator rules
   middlewares/  jwt auth, admin check, validation, multer, error handler
   controllers/
   routes/
   app.js
   server.js
-scripts/seedAdmin.js  creates the first admin user
+scripts/seedAdmin.js         creates the first admin user
+scripts/seedTodoStatuses.js  creates the four todo statuses (Backlog/Todo/InProgress/Completed)
 tests/
 uploads/avatars/      uploaded images (gitignored)
 ```
@@ -45,6 +46,16 @@ npm run seed
 
 which creates one from the `ADMIN_*` values in `.env`. Then hit `POST /login` with those
 creds to get a token and go from there.
+
+The todo board needs its status lookup values to exist before you can create a task against
+them:
+
+```bash
+npm run seed:todos
+```
+
+creates the four fixed statuses (`Backlog`, `Todo`, `InProgress`, `Completed`) if they aren't
+already there.
 
 ```bash
 npm run dev    # nodemon
@@ -78,6 +89,11 @@ have this issue and is still a very current, widely used version.
 - `POST /users`, `GET /users` - JWT required
 - `PATCH /users/:id`, `DELETE /users/:id` (soft delete) - JWT + admin role
 - `POST /upload` - JWT required, multipart `avatar` field
+- `GET /todos` - JWT required, lists the fixed status values tasks can be in
+- `POST /tasks` - JWT + admin role, creates a task and assigns it to a user
+- `GET /tasks` - JWT required; an admin gets every task, a regular user gets only their own
+- `PATCH /tasks/:id/status` - JWT required; the assignee or an admin can move a task between
+  statuses
 
 Full schemas are in `/api-docs` once the server's up.
 
@@ -95,6 +111,13 @@ Deletes are soft (`isDeleted` flag) - `GET /users` and login both skip deleted a
   `upload.middleware.js`, the controller doesn't care where the file ends up.
 - Helmet's CSP is turned off globally so the Swagger UI page can load its inline scripts/styles.
   Not a big deal for a JSON API with no other HTML pages.
+- The assignment describes `todo` as "a collection with values", so it's modelled as a lookup
+  collection (one document per status) rather than a hardcoded enum on `Task.status` - `status`
+  and `assigned_to` are both stored as ObjectId refs, same pattern mongoose uses for any
+  relation. `GET /tasks` populates both so the board is usable without a second round trip.
+- "Todo board for each user" is read as: an admin can see and assign across every user's board,
+  a regular user only ever sees their own tasks. Status updates follow the same split - the
+  assignee can drag their own task between columns, and an admin can override any task.
 
 ## Docs / Postman
 

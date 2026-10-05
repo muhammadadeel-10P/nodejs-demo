@@ -13,6 +13,27 @@ const userSchema = {
   },
 };
 
+const todoSchema = {
+  type: 'object',
+  properties: {
+    _id: { type: 'string', example: '651f1f77bcf86cd799439099' },
+    name: { type: 'string', enum: ['Backlog', 'Todo', 'InProgress', 'Completed'] },
+  },
+};
+
+const taskSchema = {
+  type: 'object',
+  properties: {
+    _id: { type: 'string', example: '651f1f77bcf86cd799439022' },
+    title: { type: 'string', example: 'Write the report' },
+    description: { type: 'string', example: 'Summarize Q3 numbers' },
+    status: { type: 'string', description: 'Todo status id', example: '651f1f77bcf86cd799439099' },
+    assigned_to: { type: 'string', description: 'User id', example: '651f1f77bcf86cd799439011' },
+    createdAt: { type: 'string', format: 'date-time' },
+    updatedAt: { type: 'string', format: 'date-time' },
+  },
+};
+
 // Hand-rolled OpenAPI doc instead of scanning route files with swagger-jsdoc -
 // easier to keep in sync than annotation comments spread across every route.
 module.exports = {
@@ -27,7 +48,7 @@ module.exports = {
     securitySchemes: {
       bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
     },
-    schemas: { User: userSchema },
+    schemas: { User: userSchema, Todo: todoSchema, Task: taskSchema },
   },
   paths: {
     '/hello': {
@@ -202,6 +223,94 @@ module.exports = {
             },
           },
           400: { description: 'no file, or wrong type/too large' },
+        },
+      },
+    },
+    '/todos': {
+      get: {
+        summary: 'List the available todo statuses',
+        tags: ['Todo'],
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            content: {
+              'application/json': {
+                schema: { type: 'array', items: { $ref: '#/components/schemas/Todo' } },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/tasks': {
+      post: {
+        summary: 'Create a task and assign it to a user (admin only)',
+        tags: ['Tasks'],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['title', 'status', 'assigned_to'],
+                properties: {
+                  title: { type: 'string', example: 'Write the report' },
+                  description: { type: 'string', example: 'Summarize Q3 numbers' },
+                  status: { type: 'string', example: '651f1f77bcf86cd799439099' },
+                  assigned_to: { type: 'string', example: '651f1f77bcf86cd799439011' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: {
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Task' } } },
+          },
+          400: { description: 'validation failed, unknown status, or unknown assignee' },
+          403: { description: 'not an admin' },
+        },
+      },
+      get: {
+        summary: "List tasks (admin sees everyone's board, a user sees only their own)",
+        tags: ['Tasks'],
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            content: {
+              'application/json': {
+                schema: { type: 'array', items: { $ref: '#/components/schemas/Task' } },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/tasks/{id}/status': {
+      patch: {
+        summary: 'Update a task status (the assignee or an admin)',
+        tags: ['Tasks'],
+        security: [{ bearerAuth: [] }],
+        parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['status'],
+                properties: { status: { type: 'string', example: '651f1f77bcf86cd799439099' } },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Task' } } },
+          },
+          403: { description: 'not the assignee or an admin' },
+          404: { description: 'task not found' },
         },
       },
     },

@@ -1,4 +1,5 @@
 const User = require('../src/models/user.model');
+const Todo = require('../src/models/todo.model');
 const { signToken } = require('../src/controllers/auth.controller');
 
 const VALID_PASSWORD = 'Str0ng!Pass';
@@ -14,8 +15,12 @@ async function createUser({ username, email, role = 'user', password = VALID_PAS
   return user;
 }
 
+async function createTodoStatus(name = 'Backlog') {
+  return Todo.create({ name });
+}
+
 function tokenFor(user) {
   return signToken(user);
 }
 
-module.exports = { createUser, tokenFor, VALID_PASSWORD };
+module.exports = { createUser, createTodoStatus, tokenFor, VALID_PASSWORD };

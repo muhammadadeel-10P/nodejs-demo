@@ -13,6 +13,8 @@ const helloRoutes = require('./routes/hello.routes');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const uploadRoutes = require('./routes/upload.routes');
+const todoRoutes = require('./routes/todo.routes');
+const taskRoutes = require('./routes/task.routes');
 
 const app = express();
 
@@ -35,6 +37,8 @@ app.use('/', helloRoutes);
 app.use('/', authRoutes);
 app.use('/users', userRoutes);
 app.use('/upload', uploadRoutes);
+app.use('/todos', todoRoutes);
+app.use('/tasks', taskRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
